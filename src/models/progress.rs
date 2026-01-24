@@ -44,7 +44,7 @@ pub struct ReportProgressResponse {
     pub new_badges: Vec<Uuid>,
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Clone, FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct LeaderboardEntry {
     pub rank: i64,

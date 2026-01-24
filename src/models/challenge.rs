@@ -59,7 +59,7 @@ impl From<Challenge> for ChallengeResponse {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct ChallengeListItem {
     pub id: Uuid,

@@ -78,13 +78,11 @@ pub async fn leave_challenge(
     Path(challenge_id): Path<Uuid>,
     Extension(auth): Extension<AuthContext>,
 ) -> Result<StatusCode, AppError> {
-    sqlx::query!(
-        "DELETE FROM progress WHERE challenge_id = $1 AND callsign = $2",
-        challenge_id,
-        auth.callsign
-    )
-    .execute(&pool)
-    .await?;
+    sqlx::query("DELETE FROM progress WHERE challenge_id = $1 AND callsign = $2")
+        .bind(challenge_id)
+        .bind(&auth.callsign)
+        .execute(&pool)
+        .await?;
 
     let left = db::leave_challenge(&pool, challenge_id, &auth.callsign).await?;
 

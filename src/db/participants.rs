@@ -10,16 +10,15 @@ pub async fn get_or_create_participant(
     callsign: &str,
     device_name: Option<&str>,
 ) -> Result<(Participant, bool), AppError> {
-    let existing = sqlx::query_as!(
-        Participant,
+    let existing = sqlx::query_as::<_, Participant>(
         r#"
         SELECT id, callsign, device_token, device_name, created_at, last_seen_at
         FROM participants
         WHERE callsign = $1
         LIMIT 1
         "#,
-        callsign
     )
+    .bind(callsign)
     .fetch_optional(pool)
     .await?;
 
@@ -30,18 +29,17 @@ pub async fn get_or_create_participant(
     let id = Uuid::new_v4();
     let device_token = generate_device_token();
 
-    let participant = sqlx::query_as!(
-        Participant,
+    let participant = sqlx::query_as::<_, Participant>(
         r#"
         INSERT INTO participants (id, callsign, device_token, device_name)
         VALUES ($1, $2, $3, $4)
         RETURNING id, callsign, device_token, device_name, created_at, last_seen_at
         "#,
-        id,
-        callsign,
-        device_token,
-        device_name,
     )
+    .bind(id)
+    .bind(callsign)
+    .bind(&device_token)
+    .bind(device_name)
     .fetch_one(pool)
     .await?;
 
@@ -52,15 +50,14 @@ pub async fn get_participant_by_token(
     pool: &PgPool,
     token: &str,
 ) -> Result<Option<Participant>, AppError> {
-    let participant = sqlx::query_as!(
-        Participant,
+    let participant = sqlx::query_as::<_, Participant>(
         r#"
         SELECT id, callsign, device_token, device_name, created_at, last_seen_at
         FROM participants
         WHERE device_token = $1
         "#,
-        token
     )
+    .bind(token)
     .fetch_optional(pool)
     .await?;
 
@@ -75,18 +72,17 @@ pub async fn join_challenge(
 ) -> Result<ChallengeParticipant, AppError> {
     let id = Uuid::new_v4();
 
-    let participation = sqlx::query_as!(
-        ChallengeParticipant,
+    let participation = sqlx::query_as::<_, ChallengeParticipant>(
         r#"
         INSERT INTO challenge_participants (id, challenge_id, callsign, invite_token)
         VALUES ($1, $2, $3, $4)
         RETURNING id, challenge_id, callsign, invite_token, joined_at, status
         "#,
-        id,
-        challenge_id,
-        callsign,
-        invite_token,
     )
+    .bind(id)
+    .bind(challenge_id)
+    .bind(callsign)
+    .bind(invite_token)
     .fetch_one(pool)
     .await
     .map_err(|e| {
@@ -106,16 +102,15 @@ pub async fn get_participation(
     challenge_id: Uuid,
     callsign: &str,
 ) -> Result<Option<ChallengeParticipant>, AppError> {
-    let participation = sqlx::query_as!(
-        ChallengeParticipant,
+    let participation = sqlx::query_as::<_, ChallengeParticipant>(
         r#"
         SELECT id, challenge_id, callsign, invite_token, joined_at, status
         FROM challenge_participants
         WHERE challenge_id = $1 AND callsign = $2
         "#,
-        challenge_id,
-        callsign
     )
+    .bind(challenge_id)
+    .bind(callsign)
     .fetch_optional(pool)
     .await?;
 
@@ -127,15 +122,15 @@ pub async fn leave_challenge(
     challenge_id: Uuid,
     callsign: &str,
 ) -> Result<bool, AppError> {
-    let result = sqlx::query!(
+    let result = sqlx::query(
         r#"
         UPDATE challenge_participants
         SET status = 'left'
         WHERE challenge_id = $1 AND callsign = $2 AND status = 'active'
         "#,
-        challenge_id,
-        callsign
     )
+    .bind(challenge_id)
+    .bind(callsign)
     .execute(pool)
     .await?;
 
@@ -143,7 +138,8 @@ pub async fn leave_challenge(
 }
 
 pub async fn revoke_tokens(pool: &PgPool, callsign: &str) -> Result<u64, AppError> {
-    let result = sqlx::query!("DELETE FROM participants WHERE callsign = $1", callsign)
+    let result = sqlx::query("DELETE FROM participants WHERE callsign = $1")
+        .bind(callsign)
         .execute(pool)
         .await?;
 

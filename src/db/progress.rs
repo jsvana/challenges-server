@@ -9,17 +9,16 @@ pub async fn get_progress(
     challenge_id: Uuid,
     callsign: &str,
 ) -> Result<Option<Progress>, AppError> {
-    let progress = sqlx::query_as!(
-        Progress,
+    let progress = sqlx::query_as::<_, Progress>(
         r#"
         SELECT id, challenge_id, callsign, completed_goals, current_value,
                score, current_tier, last_qso_date, updated_at
         FROM progress
         WHERE challenge_id = $1 AND callsign = $2
         "#,
-        challenge_id,
-        callsign
     )
+    .bind(challenge_id)
+    .bind(callsign)
     .fetch_optional(pool)
     .await?;
 
@@ -37,8 +36,7 @@ pub async fn upsert_progress(
     let id = Uuid::new_v4();
     let completed_goals = serde_json::to_value(&req.completed_goals)?;
 
-    let progress = sqlx::query_as!(
-        Progress,
+    let progress = sqlx::query_as::<_, Progress>(
         r#"
         INSERT INTO progress (id, challenge_id, callsign, completed_goals, current_value, score, current_tier, last_qso_date)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -48,15 +46,15 @@ pub async fn upsert_progress(
         RETURNING id, challenge_id, callsign, completed_goals, current_value,
                   score, current_tier, last_qso_date, updated_at
         "#,
-        id,
-        challenge_id,
-        callsign,
-        completed_goals,
-        req.current_value,
-        score,
-        current_tier,
-        req.last_qso_date,
     )
+    .bind(id)
+    .bind(challenge_id)
+    .bind(callsign)
+    .bind(&completed_goals)
+    .bind(req.current_value)
+    .bind(score)
+    .bind(current_tier)
+    .bind(req.last_qso_date)
     .fetch_one(pool)
     .await?;
 
@@ -68,7 +66,7 @@ pub async fn get_rank(
     challenge_id: Uuid,
     callsign: &str,
 ) -> Result<Option<i64>, AppError> {
-    let rank = sqlx::query_scalar!(
+    let row: Option<(Option<i64>,)> = sqlx::query_as(
         r#"
         SELECT rank FROM (
             SELECT callsign, RANK() OVER (ORDER BY score DESC, updated_at ASC) as rank
@@ -77,13 +75,13 @@ pub async fn get_rank(
         ) ranked
         WHERE callsign = $2
         "#,
-        challenge_id,
-        callsign
     )
+    .bind(challenge_id)
+    .bind(callsign)
     .fetch_optional(pool)
     .await?;
 
-    Ok(rank.flatten())
+    Ok(row.and_then(|r| r.0))
 }
 
 pub async fn get_leaderboard(
@@ -94,11 +92,10 @@ pub async fn get_leaderboard(
     let limit = query.limit.unwrap_or(100).min(100);
     let offset = query.offset.unwrap_or(0);
 
-    let entries = sqlx::query_as!(
-        LeaderboardEntry,
+    let entries = sqlx::query_as::<_, LeaderboardEntry>(
         r#"
         SELECT
-            RANK() OVER (ORDER BY score DESC, updated_at ASC) as "rank!",
+            RANK() OVER (ORDER BY score DESC, updated_at ASC) as rank,
             callsign,
             score,
             current_tier,
@@ -108,21 +105,21 @@ pub async fn get_leaderboard(
         ORDER BY score DESC, updated_at ASC
         LIMIT $2 OFFSET $3
         "#,
-        challenge_id,
-        limit,
-        offset,
     )
+    .bind(challenge_id)
+    .bind(limit)
+    .bind(offset)
     .fetch_all(pool)
     .await?;
 
-    let total = sqlx::query_scalar!(
-        r#"SELECT COUNT(*) as "count!" FROM progress WHERE challenge_id = $1"#,
-        challenge_id
+    let total: (i64,) = sqlx::query_as(
+        r#"SELECT COUNT(*) FROM progress WHERE challenge_id = $1"#,
     )
+    .bind(challenge_id)
     .fetch_one(pool)
     .await?;
 
-    Ok((entries, total))
+    Ok((entries, total.0))
 }
 
 pub async fn get_leaderboard_around(
@@ -131,8 +128,7 @@ pub async fn get_leaderboard_around(
     callsign: &str,
     range: i64,
 ) -> Result<Vec<LeaderboardEntry>, AppError> {
-    let entries = sqlx::query_as!(
-        LeaderboardEntry,
+    let entries = sqlx::query_as::<_, LeaderboardEntry>(
         r#"
         WITH ranked AS (
             SELECT
@@ -145,7 +141,7 @@ pub async fn get_leaderboard_around(
             WHERE challenge_id = $1
         )
         SELECT
-            rank as "rank!",
+            rank,
             callsign,
             score,
             current_tier,
@@ -157,10 +153,10 @@ pub async fn get_leaderboard_around(
             (SELECT rank FROM ranked WHERE callsign = $2) + $3
         ORDER BY rank
         "#,
-        challenge_id,
-        callsign,
-        range,
     )
+    .bind(challenge_id)
+    .bind(callsign)
+    .bind(range)
     .fetch_all(pool)
     .await?;
 

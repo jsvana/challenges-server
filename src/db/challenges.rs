@@ -13,8 +13,7 @@ pub async fn list_challenges(
     let limit = query.limit.unwrap_or(50).min(100);
     let offset = query.offset.unwrap_or(0);
 
-    let challenges = sqlx::query_as!(
-        ChallengeListItem,
+    let challenges = sqlx::query_as::<_, ChallengeListItem>(
         r#"
         SELECT
             c.id,
@@ -23,7 +22,7 @@ pub async fn list_challenges(
             c.category,
             c.challenge_type,
             c.is_active,
-            COALESCE(COUNT(cp.id), 0) as "participant_count!"
+            COALESCE(COUNT(cp.id), 0) as participant_count
         FROM challenges c
         LEFT JOIN challenge_participants cp ON cp.challenge_id = c.id AND cp.status = 'active'
         WHERE ($1::text IS NULL OR c.category = $1)
@@ -33,36 +32,35 @@ pub async fn list_challenges(
         ORDER BY c.created_at DESC
         LIMIT $4 OFFSET $5
         "#,
-        query.category,
-        query.challenge_type,
-        query.active,
-        limit,
-        offset,
     )
+    .bind(&query.category)
+    .bind(&query.challenge_type)
+    .bind(query.active)
+    .bind(limit)
+    .bind(offset)
     .fetch_all(pool)
     .await?;
 
-    let total = sqlx::query_scalar!(
+    let total: (i64,) = sqlx::query_as(
         r#"
-        SELECT COUNT(*) as "count!"
+        SELECT COUNT(*)
         FROM challenges c
         WHERE ($1::text IS NULL OR c.category = $1)
           AND ($2::text IS NULL OR c.challenge_type = $2)
           AND ($3::bool IS NULL OR c.is_active = $3)
         "#,
-        query.category,
-        query.challenge_type,
-        query.active,
     )
+    .bind(&query.category)
+    .bind(&query.challenge_type)
+    .bind(query.active)
     .fetch_one(pool)
     .await?;
 
-    Ok((challenges, total))
+    Ok((challenges, total.0))
 }
 
 pub async fn get_challenge(pool: &PgPool, id: Uuid) -> Result<Option<Challenge>, AppError> {
-    let challenge = sqlx::query_as!(
-        Challenge,
+    let challenge = sqlx::query_as::<_, Challenge>(
         r#"
         SELECT
             id, version, name, description, author, category, challenge_type,
@@ -71,8 +69,8 @@ pub async fn get_challenge(pool: &PgPool, id: Uuid) -> Result<Option<Challenge>,
         FROM challenges
         WHERE id = $1
         "#,
-        id
     )
+    .bind(id)
     .fetch_optional(pool)
     .await?;
 
@@ -85,8 +83,7 @@ pub async fn create_challenge(
 ) -> Result<Challenge, AppError> {
     let id = Uuid::new_v4();
 
-    let challenge = sqlx::query_as!(
-        Challenge,
+    let challenge = sqlx::query_as::<_, Challenge>(
         r#"
         INSERT INTO challenges (id, name, description, author, category, challenge_type, configuration, invite_config, hamalert_config)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
@@ -94,16 +91,16 @@ pub async fn create_challenge(
                   configuration, invite_config, hamalert_config, is_active,
                   created_at, updated_at
         "#,
-        id,
-        req.name,
-        req.description,
-        req.author,
-        req.category,
-        req.challenge_type,
-        req.configuration,
-        req.invite_config,
-        req.hamalert_config,
     )
+    .bind(id)
+    .bind(&req.name)
+    .bind(&req.description)
+    .bind(&req.author)
+    .bind(&req.category)
+    .bind(&req.challenge_type)
+    .bind(&req.configuration)
+    .bind(&req.invite_config)
+    .bind(&req.hamalert_config)
     .fetch_one(pool)
     .await?;
 
@@ -115,8 +112,7 @@ pub async fn update_challenge(
     id: Uuid,
     req: &CreateChallengeRequest,
 ) -> Result<Option<Challenge>, AppError> {
-    let challenge = sqlx::query_as!(
-        Challenge,
+    let challenge = sqlx::query_as::<_, Challenge>(
         r#"
         UPDATE challenges
         SET name = $2, description = $3, author = $4, category = $5,
@@ -127,16 +123,16 @@ pub async fn update_challenge(
                   configuration, invite_config, hamalert_config, is_active,
                   created_at, updated_at
         "#,
-        id,
-        req.name,
-        req.description,
-        req.author,
-        req.category,
-        req.challenge_type,
-        req.configuration,
-        req.invite_config,
-        req.hamalert_config,
     )
+    .bind(id)
+    .bind(&req.name)
+    .bind(&req.description)
+    .bind(&req.author)
+    .bind(&req.category)
+    .bind(&req.challenge_type)
+    .bind(&req.configuration)
+    .bind(&req.invite_config)
+    .bind(&req.hamalert_config)
     .fetch_optional(pool)
     .await?;
 
@@ -144,7 +140,8 @@ pub async fn update_challenge(
 }
 
 pub async fn delete_challenge(pool: &PgPool, id: Uuid) -> Result<bool, AppError> {
-    let result = sqlx::query!("DELETE FROM challenges WHERE id = $1", id)
+    let result = sqlx::query("DELETE FROM challenges WHERE id = $1")
+        .bind(id)
         .execute(pool)
         .await?;
 

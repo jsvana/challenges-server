@@ -3,7 +3,7 @@ use axum::{
     middleware::Next,
     response::Response,
 };
-use sqlx::PgPool;
+use sqlx::{FromRow, PgPool};
 
 use crate::error::AppError;
 
@@ -11,6 +11,12 @@ use crate::error::AppError;
 pub struct AuthContext {
     pub callsign: String,
     pub participant_id: uuid::Uuid,
+}
+
+#[derive(Debug, FromRow)]
+struct ParticipantRow {
+    id: uuid::Uuid,
+    callsign: String,
 }
 
 pub async fn optional_auth(
@@ -55,15 +61,15 @@ pub async fn require_auth(
 }
 
 async fn validate_token(pool: &PgPool, token: &str) -> Result<Option<AuthContext>, AppError> {
-    let participant = sqlx::query!(
+    let participant = sqlx::query_as::<_, ParticipantRow>(
         r#"
         UPDATE participants
         SET last_seen_at = now()
         WHERE device_token = $1
         RETURNING id, callsign
         "#,
-        token
     )
+    .bind(token)
     .fetch_optional(pool)
     .await?;
 

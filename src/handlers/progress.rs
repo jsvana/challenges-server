@@ -79,7 +79,7 @@ pub async fn get_progress(
         .await?
         .unwrap_or(0);
 
-    let completed_goals: Vec<String> = serde_json::from_value(progress.completed_goals)
+    let completed_goals: Vec<String> = serde_json::from_value(progress.completed_goals.clone())
         .unwrap_or_default();
 
     let percentage = calculate_percentage_from_progress(&challenge.configuration, &progress);
