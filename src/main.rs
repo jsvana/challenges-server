@@ -2,6 +2,7 @@ mod auth;
 mod config;
 mod db;
 mod error;
+mod handlers;
 mod models;
 
 use config::Config;
