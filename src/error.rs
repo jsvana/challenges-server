@@ -12,6 +12,12 @@ pub enum AppError {
     #[error("Challenge not found")]
     ChallengeNotFound { challenge_id: Uuid },
 
+    #[error("Badge not found")]
+    BadgeNotFound { badge_id: Uuid },
+
+    #[error("Invite not found")]
+    InviteNotFound { token: String },
+
     #[error("Already joined this challenge")]
     AlreadyJoined,
 
@@ -69,6 +75,16 @@ impl IntoResponse for AppError {
                 StatusCode::NOT_FOUND,
                 "CHALLENGE_NOT_FOUND",
                 Some(serde_json::json!({ "challengeId": challenge_id })),
+            ),
+            Self::BadgeNotFound { badge_id } => (
+                StatusCode::NOT_FOUND,
+                "BADGE_NOT_FOUND",
+                Some(serde_json::json!({ "badgeId": badge_id })),
+            ),
+            Self::InviteNotFound { token } => (
+                StatusCode::NOT_FOUND,
+                "INVITE_NOT_FOUND",
+                Some(serde_json::json!({ "token": token })),
             ),
             Self::AlreadyJoined => (StatusCode::CONFLICT, "ALREADY_JOINED", None),
             Self::NotParticipating => (StatusCode::FORBIDDEN, "NOT_PARTICIPATING", None),

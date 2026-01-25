@@ -1,3 +1,13 @@
+# Build frontend
+FROM node:20-alpine AS frontend
+
+WORKDIR /app/web
+COPY web/package*.json ./
+RUN npm ci
+COPY web/ ./
+RUN npm run build
+
+# Build Rust backend
 FROM rust:1.88-alpine AS builder
 
 WORKDIR /app
@@ -24,9 +34,12 @@ RUN touch src/main.rs && cargo build --release
 # Runtime image
 FROM alpine:3.19
 
+WORKDIR /app
+
 RUN apk add --no-cache ca-certificates
 
 COPY --from=builder /app/target/release/challenges-server /usr/local/bin/
+COPY --from=frontend /app/web/dist ./web/dist
 
 EXPOSE 8080
 

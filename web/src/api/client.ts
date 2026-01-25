@@ -1,0 +1,178 @@
+import type { Challenge, ChallengeListItem, Badge, Invite } from '../types/challenge';
+
+const API_BASE = '/v1';
+const TOKEN_KEY = 'challenges_admin_token';
+
+export function getToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+export function setToken(token: string): void {
+  localStorage.setItem(TOKEN_KEY, token);
+}
+
+export function clearToken(): void {
+  localStorage.removeItem(TOKEN_KEY);
+}
+
+interface ApiError {
+  error: {
+    code: string;
+    message: string;
+    details?: Record<string, unknown>;
+  };
+}
+
+async function handleResponse<T>(response: Response): Promise<T> {
+  if (!response.ok) {
+    const error: ApiError = await response.json().catch(() => ({
+      error: { code: 'UNKNOWN', message: response.statusText },
+    }));
+    throw new Error(error.error.message);
+  }
+  const data = await response.json();
+  return data.data as T;
+}
+
+function authHeaders(): HeadersInit {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+// Challenges
+export async function listChallenges(params?: {
+  category?: string;
+  type?: string;
+  active?: boolean;
+}): Promise<{ challenges: ChallengeListItem[]; total: number }> {
+  const searchParams = new URLSearchParams();
+  if (params?.category) searchParams.set('category', params.category);
+  if (params?.type) searchParams.set('type', params.type);
+  if (params?.active !== undefined) searchParams.set('active', String(params.active));
+
+  const url = `${API_BASE}/challenges${searchParams.toString() ? '?' + searchParams : ''}`;
+  const response = await fetch(url, { headers: authHeaders() });
+  return handleResponse(response);
+}
+
+export async function getChallenge(id: string): Promise<Challenge> {
+  const response = await fetch(`${API_BASE}/challenges/${id}`, {
+    headers: authHeaders(),
+  });
+  return handleResponse(response);
+}
+
+export async function createChallenge(challenge: Omit<Challenge, 'id' | 'version' | 'createdAt' | 'updatedAt'>): Promise<Challenge> {
+  const response = await fetch(`${API_BASE}/admin/challenges`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...authHeaders(),
+    },
+    body: JSON.stringify(challenge),
+  });
+  return handleResponse(response);
+}
+
+export async function updateChallenge(id: string, challenge: Omit<Challenge, 'id' | 'version' | 'createdAt' | 'updatedAt'>): Promise<Challenge> {
+  const response = await fetch(`${API_BASE}/admin/challenges/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      ...authHeaders(),
+    },
+    body: JSON.stringify(challenge),
+  });
+  return handleResponse(response);
+}
+
+export async function deleteChallenge(id: string): Promise<void> {
+  const response = await fetch(`${API_BASE}/admin/challenges/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  if (!response.ok) {
+    const error: ApiError = await response.json().catch(() => ({
+      error: { code: 'UNKNOWN', message: response.statusText },
+    }));
+    throw new Error(error.error.message);
+  }
+}
+
+// Badges
+export async function listBadges(challengeId: string): Promise<{ badges: Badge[] }> {
+  const response = await fetch(`${API_BASE}/admin/challenges/${challengeId}/badges`, {
+    headers: authHeaders(),
+  });
+  return handleResponse(response);
+}
+
+export async function uploadBadge(
+  challengeId: string,
+  file: File,
+  name: string,
+  tierId?: string
+): Promise<Badge> {
+  const formData = new FormData();
+  formData.append('image', file);
+  formData.append('name', name);
+  if (tierId) formData.append('tierId', tierId);
+
+  const token = getToken();
+  const response = await fetch(`${API_BASE}/admin/challenges/${challengeId}/badges`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  });
+  return handleResponse(response);
+}
+
+export async function deleteBadge(badgeId: string): Promise<void> {
+  const response = await fetch(`${API_BASE}/admin/badges/${badgeId}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  if (!response.ok) {
+    const error: ApiError = await response.json().catch(() => ({
+      error: { code: 'UNKNOWN', message: response.statusText },
+    }));
+    throw new Error(error.error.message);
+  }
+}
+
+// Invites
+export async function listInvites(challengeId: string): Promise<{ invites: Invite[] }> {
+  const response = await fetch(`${API_BASE}/admin/challenges/${challengeId}/invites`, {
+    headers: authHeaders(),
+  });
+  return handleResponse(response);
+}
+
+export async function generateInvite(
+  challengeId: string,
+  maxUses?: number,
+  expiresAt?: string
+): Promise<Invite> {
+  const response = await fetch(`${API_BASE}/admin/challenges/${challengeId}/invites`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...authHeaders(),
+    },
+    body: JSON.stringify({ maxUses, expiresAt }),
+  });
+  return handleResponse(response);
+}
+
+export async function revokeInvite(token: string): Promise<void> {
+  const response = await fetch(`${API_BASE}/admin/invites/${token}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  if (!response.ok) {
+    const error: ApiError = await response.json().catch(() => ({
+      error: { code: 'UNKNOWN', message: response.statusText },
+    }));
+    throw new Error(error.error.message);
+  }
+}

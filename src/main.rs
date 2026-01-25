@@ -14,6 +14,7 @@ use axum::{
 };
 use sqlx::postgres::PgPoolOptions;
 use tower_http::cors::{Any, CorsLayer};
+use tower_http::services::{ServeDir, ServeFile};
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -72,6 +73,7 @@ fn create_router(pool: sqlx::PgPool, admin_token: String) -> Router {
         .route("/challenges/{id}", get(handlers::get_challenge))
         .route("/challenges/{id}/join", post(handlers::join_challenge))
         .route("/challenges/{id}/leaderboard", get(handlers::get_leaderboard))
+        .route("/badges/{id}/image", get(handlers::get_badge_image))
         .route("/health", get(handlers::health_check))
         .layer(middleware::from_fn_with_state(
             pool.clone(),
@@ -93,15 +95,29 @@ fn create_router(pool: sqlx::PgPool, admin_token: String) -> Router {
         .route("/admin/challenges", post(handlers::create_challenge))
         .route("/admin/challenges/{id}", put(handlers::update_challenge))
         .route("/admin/challenges/{id}", delete(handlers::delete_challenge))
+        .route(
+            "/admin/challenges/{id}/badges",
+            post(handlers::upload_badge).get(handlers::list_badges),
+        )
+        .route("/admin/badges/{id}", delete(handlers::delete_badge))
+        .route(
+            "/admin/challenges/{id}/invites",
+            post(handlers::generate_invite).get(handlers::list_invites),
+        )
+        .route("/admin/invites/{token}", delete(handlers::revoke_invite))
         .layer(middleware::from_fn_with_state(
             admin_token,
             auth::require_admin,
         ));
 
+    // Static file serving for SPA (fallback to index.html for client-side routing)
+    let serve_dir = ServeDir::new("web/dist").fallback(ServeFile::new("web/dist/index.html"));
+
     Router::new()
         .nest("/v1", public_routes)
         .nest("/v1", auth_routes)
         .nest("/v1", admin_routes)
+        .fallback_service(serve_dir)
         .layer(TraceLayer::new_for_http())
         .layer(cors)
         .with_state(pool)
