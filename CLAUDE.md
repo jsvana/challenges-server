@@ -16,10 +16,12 @@ A self-hostable Rust/Axum HTTP API server for ham radio challenge tracking. Enab
 | Challenges | Challenge types, scoring, tiers | [docs/features/challenges.md](docs/features/challenges.md) |
 | Leaderboards | Ranking, snapshots, queries | [docs/features/leaderboards.md](docs/features/leaderboards.md) |
 | Auth | Device tokens, callsign verification | [docs/features/auth.md](docs/features/auth.md) |
+| File Index | Source file locations and exports | [docs/index/](docs/index/) |
 
 ## Code Standards
 
 - **Maximum file size: 1000 lines.** Refactor when approaching this limit.
+- **Update file index on changes.** When adding, removing, or modifying file exports, update the corresponding `docs/index/*.md` file.
 - Use `thiserror` for error types with `IntoResponse` impl
 - All database queries via `sqlx` with compile-time checking
 - Handlers return `Result<Json<T>, AppError>`
@@ -58,26 +60,24 @@ BASE_URL=https://challenges.example.com                       # Optional
 RUST_LOG=info                                                 # Optional
 ```
 
-## Project Structure
+## Finding Code
 
-```
-challenges-server/
-├── migrations/           # SQL migrations
-├── src/
-│   ├── main.rs          # Entry point
-│   ├── config.rs        # Env var parsing
-│   ├── error.rs         # AppError type
-│   ├── auth/            # Token middleware
-│   ├── db/              # Database queries
-│   ├── models/          # Data structures
-│   ├── handlers/        # HTTP handlers
-│   ├── scoring/         # Score calculation
-│   └── middleware/      # Rate limiting, admin auth
-└── docs/
-    ├── architecture.md
-    ├── api.md
-    └── features/
-```
+**Use the file index to locate code. Do not use Glob or find commands.**
+
+| Area | Index File |
+|------|------------|
+| HTTP handlers | [docs/index/handlers.md](docs/index/handlers.md) |
+| Database queries | [docs/index/db.md](docs/index/db.md) |
+| Data structures | [docs/index/models.md](docs/index/models.md) |
+| Authentication | [docs/index/auth.md](docs/index/auth.md) |
+| Core (main, config, error) | [docs/index/core.md](docs/index/core.md) |
+| Migrations | [docs/index/migrations.md](docs/index/migrations.md) |
+| Tests | [docs/index/tests.md](docs/index/tests.md) |
+
+**Search policy:**
+1. Consult the relevant index file first
+2. Use Grep for specific symbol searches only if the index doesn't help
+3. If you need broader file discovery, ask the user for permission before using Glob or find
 
 ## Implementation Status
 
