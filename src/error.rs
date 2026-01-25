@@ -42,6 +42,9 @@ pub enum AppError {
     #[error("Invalid or revoked token")]
     InvalidToken,
 
+    #[error("Forbidden")]
+    Forbidden,
+
     #[error("Rate limit exceeded")]
     RateLimited,
 
@@ -94,6 +97,7 @@ impl IntoResponse for AppError {
             Self::MaxParticipants => (StatusCode::FORBIDDEN, "MAX_PARTICIPANTS", None),
             Self::ChallengeEnded => (StatusCode::BAD_REQUEST, "CHALLENGE_ENDED", None),
             Self::InvalidToken => (StatusCode::UNAUTHORIZED, "INVALID_TOKEN", None),
+            Self::Forbidden => (StatusCode::FORBIDDEN, "FORBIDDEN", None),
             Self::RateLimited => (StatusCode::TOO_MANY_REQUESTS, "RATE_LIMITED", None),
             Self::Validation { .. } => (StatusCode::BAD_REQUEST, "VALIDATION_ERROR", None),
             Self::Database(_) => (StatusCode::INTERNAL_SERVER_ERROR, "INTERNAL_ERROR", None),

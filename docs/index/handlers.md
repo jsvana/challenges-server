@@ -47,6 +47,13 @@ Leaderboard queries.
 **Exports:**
 - `async fn get_leaderboard()` - GET /v1/challenges/:id/leaderboard - Get leaderboard with pagination
 
+### `src/handlers/participants.rs`
+Participant queries with callsign-based authorization.
+
+**Exports:**
+- `async fn get_participation_status()` - GET /v1/challenges/:id/participants/:callsign - Get participation status (auth required, callsign must match)
+- `async fn list_challenges_for_callsign()` - GET /v1/participants/:callsign/challenges - List all challenges for a callsign (auth required, callsign must match)
+
 ### `src/handlers/health.rs`
 Health check endpoint.
 

@@ -40,3 +40,22 @@ pub struct JoinChallengeResponse {
     pub status: String,
     pub historical_allowed: bool,
 }
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ParticipationResponse {
+    pub participation_id: Uuid,
+    pub challenge_id: Uuid,
+    pub joined_at: DateTime<Utc>,
+    pub status: String,
+}
+
+#[derive(Debug, Serialize, FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct ChallengeParticipation {
+    pub participation_id: Uuid,
+    pub challenge_id: Uuid,
+    pub challenge_name: String,
+    pub joined_at: DateTime<Utc>,
+    pub status: String,
+}

@@ -29,6 +29,8 @@ Participant and participation data structures.
 - `struct ChallengeParticipant` - Database row for challenge_participants table (FromRow)
 - `struct JoinChallengeRequest` - API request for joining challenge (Deserialize)
 - `struct JoinChallengeResponse` - API response after joining (Serialize)
+- `struct ParticipationResponse` - API response for participation status (Serialize)
+- `struct ChallengeParticipation` - API response for challenge participation with name (FromRow, Serialize)
 
 ### `src/models/progress.rs`
 Progress and leaderboard data structures.

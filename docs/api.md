@@ -187,6 +187,8 @@ POST /v1/challenges/{id}/join
 }
 ```
 
+**Note:** If the callsign already exists in the system, a new device token is generated and returned. This allows token recovery for users who have lost their token.
+
 **Errors:**
 
 | Code | HTTP | Description |
@@ -282,6 +284,66 @@ GET /v1/challenges/{id}/leaderboard
   }
 }
 ```
+
+### Get Participation Status
+
+```
+GET /v1/challenges/{id}/participants/{callsign}
+Authorization: Bearer fd_xxx
+```
+
+Returns participation status for a callsign in a specific challenge. The authenticated callsign must match the requested callsign.
+
+**Response:**
+
+```json
+{
+  "data": {
+    "participationId": "uuid",
+    "challengeId": "uuid",
+    "joinedAt": "2025-01-15T12:00:00Z",
+    "status": "active"
+  }
+}
+```
+
+**Errors:**
+
+| Code | HTTP | Description |
+|------|------|-------------|
+| `FORBIDDEN` | 403 | Authenticated callsign doesn't match requested callsign |
+| `NOT_PARTICIPATING` | 403 | Callsign is not a participant in this challenge |
+
+### List Challenges for Callsign
+
+```
+GET /v1/participants/{callsign}/challenges
+Authorization: Bearer fd_xxx
+```
+
+Returns all challenges a callsign has joined. The authenticated callsign must match the requested callsign.
+
+**Response:**
+
+```json
+{
+  "data": [
+    {
+      "participationId": "uuid",
+      "challengeId": "uuid",
+      "challengeName": "Worked All States",
+      "joinedAt": "2025-01-15T12:00:00Z",
+      "status": "active"
+    }
+  ]
+}
+```
+
+**Errors:**
+
+| Code | HTTP | Description |
+|------|------|-------------|
+| `FORBIDDEN` | 403 | Authenticated callsign doesn't match requested callsign |
 
 ### Leave Challenge
 
@@ -448,6 +510,7 @@ Manually ends a challenge and creates a snapshot.
 | `MAX_PARTICIPANTS` | 403 | Challenge at capacity |
 | `CHALLENGE_ENDED` | 400 | Challenge has ended |
 | `INVALID_TOKEN` | 401 | Bad or revoked token |
+| `FORBIDDEN` | 403 | Access denied (e.g., callsign mismatch) |
 | `RATE_LIMITED` | 429 | Too many requests |
 | `VALIDATION_ERROR` | 400 | Invalid request body |
 | `INTERNAL_ERROR` | 500 | Server error |

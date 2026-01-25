@@ -9,6 +9,8 @@ pub async fn get_progress(
     challenge_id: Uuid,
     callsign: &str,
 ) -> Result<Option<Progress>, AppError> {
+    let callsign_upper = callsign.to_uppercase();
+
     let progress = sqlx::query_as::<_, Progress>(
         r#"
         SELECT id, challenge_id, callsign, completed_goals, current_value,
@@ -18,7 +20,7 @@ pub async fn get_progress(
         "#,
     )
     .bind(challenge_id)
-    .bind(callsign)
+    .bind(&callsign_upper)
     .fetch_optional(pool)
     .await?;
 
@@ -34,6 +36,7 @@ pub async fn upsert_progress(
     current_tier: Option<&str>,
 ) -> Result<Progress, AppError> {
     let id = Uuid::new_v4();
+    let callsign_upper = callsign.to_uppercase();
     let completed_goals = serde_json::to_value(&req.completed_goals)?;
 
     let progress = sqlx::query_as::<_, Progress>(
@@ -49,7 +52,7 @@ pub async fn upsert_progress(
     )
     .bind(id)
     .bind(challenge_id)
-    .bind(callsign)
+    .bind(&callsign_upper)
     .bind(&completed_goals)
     .bind(req.current_value)
     .bind(score)
@@ -66,6 +69,8 @@ pub async fn get_rank(
     challenge_id: Uuid,
     callsign: &str,
 ) -> Result<Option<i64>, AppError> {
+    let callsign_upper = callsign.to_uppercase();
+
     let row: Option<(Option<i64>,)> = sqlx::query_as(
         r#"
         SELECT rank FROM (
@@ -77,7 +82,7 @@ pub async fn get_rank(
         "#,
     )
     .bind(challenge_id)
-    .bind(callsign)
+    .bind(&callsign_upper)
     .fetch_optional(pool)
     .await?;
 
@@ -112,12 +117,10 @@ pub async fn get_leaderboard(
     .fetch_all(pool)
     .await?;
 
-    let total: (i64,) = sqlx::query_as(
-        r#"SELECT COUNT(*) FROM progress WHERE challenge_id = $1"#,
-    )
-    .bind(challenge_id)
-    .fetch_one(pool)
-    .await?;
+    let total: (i64,) = sqlx::query_as(r#"SELECT COUNT(*) FROM progress WHERE challenge_id = $1"#)
+        .bind(challenge_id)
+        .fetch_one(pool)
+        .await?;
 
     Ok((entries, total.0))
 }
@@ -128,6 +131,8 @@ pub async fn get_leaderboard_around(
     callsign: &str,
     range: i64,
 ) -> Result<Vec<LeaderboardEntry>, AppError> {
+    let callsign_upper = callsign.to_uppercase();
+
     let entries = sqlx::query_as::<_, LeaderboardEntry>(
         r#"
         WITH ranked AS (
@@ -155,7 +160,7 @@ pub async fn get_leaderboard_around(
         "#,
     )
     .bind(challenge_id)
-    .bind(callsign)
+    .bind(&callsign_upper)
     .bind(range)
     .fetch_all(pool)
     .await?;

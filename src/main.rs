@@ -88,6 +88,14 @@ fn create_router(pool: sqlx::PgPool, admin_token: String) -> Router {
         .route("/challenges/:id/progress", post(handlers::report_progress))
         .route("/challenges/:id/progress", get(handlers::get_progress))
         .route("/challenges/:id/leave", delete(handlers::leave_challenge))
+        .route(
+            "/challenges/:id/participants/:callsign",
+            get(handlers::get_participation_status),
+        )
+        .route(
+            "/participants/:callsign/challenges",
+            get(handlers::list_challenges_for_callsign),
+        )
         .layer(middleware::from_fn_with_state(
             pool.clone(),
             auth::require_auth,

@@ -35,6 +35,7 @@ dotenvy = "0.15"
 
 # Utilities
 rand = "0.8"
+tower = "0.5.3"
 
 [dev-dependencies]
 axum-test = "15"

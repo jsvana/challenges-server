@@ -38,12 +38,13 @@ pub async fn join_challenge(
         }
     }
 
-    let (participant, _is_new) = db::get_or_create_participant(
-        &pool,
-        &req.callsign,
-        req.device_name.as_deref(),
-    )
-    .await?;
+    let (mut participant, is_new) =
+        db::get_or_create_participant(&pool, &req.callsign, req.device_name.as_deref()).await?;
+
+    // Refresh token on re-join (allows token recovery)
+    if !is_new {
+        participant = db::refresh_participant_token(&pool, &req.callsign).await?;
+    }
 
     let participation = db::join_challenge(
         &pool,
@@ -78,13 +79,15 @@ pub async fn leave_challenge(
     Path(challenge_id): Path<Uuid>,
     Extension(auth): Extension<AuthContext>,
 ) -> Result<StatusCode, AppError> {
+    let callsign_upper = auth.callsign.to_uppercase();
+
     sqlx::query("DELETE FROM progress WHERE challenge_id = $1 AND callsign = $2")
         .bind(challenge_id)
-        .bind(&auth.callsign)
+        .bind(&callsign_upper)
         .execute(&pool)
         .await?;
 
-    let left = db::leave_challenge(&pool, challenge_id, &auth.callsign).await?;
+    let left = db::leave_challenge(&pool, challenge_id, &callsign_upper).await?;
 
     if left {
         Ok(StatusCode::NO_CONTENT)

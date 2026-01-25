@@ -30,6 +30,8 @@ Participant and challenge participation management.
 - `async fn get_participation()` - Get participation record, returns `Option<ChallengeParticipant>`
 - `async fn leave_challenge()` - Set participation status to 'left', returns `bool`
 - `async fn revoke_tokens()` - Delete all participant records for callsign, returns `u64`
+- `async fn refresh_participant_token()` - Generate and update device token for callsign, returns `Participant`
+- `async fn get_challenges_for_callsign()` - Get all active challenge participations for callsign, returns `Vec<ChallengeParticipation>`
 
 ### `src/db/progress.rs`
 Progress tracking and leaderboard queries.

@@ -3,13 +3,15 @@ use uuid::Uuid;
 
 use crate::auth::generate_device_token;
 use crate::error::AppError;
-use crate::models::{ChallengeParticipant, Participant};
+use crate::models::{ChallengeParticipant, ChallengeParticipation, Participant};
 
 pub async fn get_or_create_participant(
     pool: &PgPool,
     callsign: &str,
     device_name: Option<&str>,
 ) -> Result<(Participant, bool), AppError> {
+    let callsign_upper = callsign.to_uppercase();
+
     let existing = sqlx::query_as::<_, Participant>(
         r#"
         SELECT id, callsign, device_token, device_name, created_at, last_seen_at
@@ -18,7 +20,7 @@ pub async fn get_or_create_participant(
         LIMIT 1
         "#,
     )
-    .bind(callsign)
+    .bind(&callsign_upper)
     .fetch_optional(pool)
     .await?;
 
@@ -37,7 +39,7 @@ pub async fn get_or_create_participant(
         "#,
     )
     .bind(id)
-    .bind(callsign)
+    .bind(&callsign_upper)
     .bind(&device_token)
     .bind(device_name)
     .fetch_one(pool)
@@ -64,6 +66,33 @@ pub async fn get_participant_by_token(
     Ok(participant)
 }
 
+pub async fn get_challenges_for_callsign(
+    pool: &PgPool,
+    callsign: &str,
+) -> Result<Vec<ChallengeParticipation>, AppError> {
+    let callsign_upper = callsign.to_uppercase();
+
+    let challenges = sqlx::query_as::<_, ChallengeParticipation>(
+        r#"
+        SELECT
+            cp.id as participation_id,
+            cp.challenge_id,
+            c.name as challenge_name,
+            cp.joined_at,
+            cp.status
+        FROM challenge_participants cp
+        JOIN challenges c ON c.id = cp.challenge_id
+        WHERE cp.callsign = $1 AND cp.status = 'active'
+        ORDER BY cp.joined_at DESC
+        "#,
+    )
+    .bind(&callsign_upper)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(challenges)
+}
+
 pub async fn join_challenge(
     pool: &PgPool,
     challenge_id: Uuid,
@@ -71,6 +100,7 @@ pub async fn join_challenge(
     invite_token: Option<&str>,
 ) -> Result<ChallengeParticipant, AppError> {
     let id = Uuid::new_v4();
+    let callsign_upper = callsign.to_uppercase();
 
     let participation = sqlx::query_as::<_, ChallengeParticipant>(
         r#"
@@ -81,7 +111,7 @@ pub async fn join_challenge(
     )
     .bind(id)
     .bind(challenge_id)
-    .bind(callsign)
+    .bind(&callsign_upper)
     .bind(invite_token)
     .fetch_one(pool)
     .await
@@ -102,6 +132,8 @@ pub async fn get_participation(
     challenge_id: Uuid,
     callsign: &str,
 ) -> Result<Option<ChallengeParticipant>, AppError> {
+    let callsign_upper = callsign.to_uppercase();
+
     let participation = sqlx::query_as::<_, ChallengeParticipant>(
         r#"
         SELECT id, challenge_id, callsign, invite_token, joined_at, status
@@ -110,7 +142,7 @@ pub async fn get_participation(
         "#,
     )
     .bind(challenge_id)
-    .bind(callsign)
+    .bind(&callsign_upper)
     .fetch_optional(pool)
     .await?;
 
@@ -122,6 +154,8 @@ pub async fn leave_challenge(
     challenge_id: Uuid,
     callsign: &str,
 ) -> Result<bool, AppError> {
+    let callsign_upper = callsign.to_uppercase();
+
     let result = sqlx::query(
         r#"
         UPDATE challenge_participants
@@ -130,7 +164,7 @@ pub async fn leave_challenge(
         "#,
     )
     .bind(challenge_id)
-    .bind(callsign)
+    .bind(&callsign_upper)
     .execute(pool)
     .await?;
 
@@ -138,10 +172,35 @@ pub async fn leave_challenge(
 }
 
 pub async fn revoke_tokens(pool: &PgPool, callsign: &str) -> Result<u64, AppError> {
+    let callsign_upper = callsign.to_uppercase();
+
     let result = sqlx::query("DELETE FROM participants WHERE callsign = $1")
-        .bind(callsign)
+        .bind(&callsign_upper)
         .execute(pool)
         .await?;
 
     Ok(result.rows_affected())
+}
+
+pub async fn refresh_participant_token(
+    pool: &PgPool,
+    callsign: &str,
+) -> Result<Participant, AppError> {
+    let callsign_upper = callsign.to_uppercase();
+    let new_token = generate_device_token();
+
+    let participant = sqlx::query_as::<_, Participant>(
+        r#"
+        UPDATE participants
+        SET device_token = $1
+        WHERE callsign = $2
+        RETURNING id, callsign, device_token, device_name, created_at, last_seen_at
+        "#,
+    )
+    .bind(&new_token)
+    .bind(&callsign_upper)
+    .fetch_one(pool)
+    .await?;
+
+    Ok(participant)
 }
