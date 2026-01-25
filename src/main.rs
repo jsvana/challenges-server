@@ -70,10 +70,13 @@ fn create_router(pool: sqlx::PgPool, admin_token: String) -> Router {
     // Public routes
     let public_routes = Router::new()
         .route("/challenges", get(handlers::list_challenges))
-        .route("/challenges/{id}", get(handlers::get_challenge))
-        .route("/challenges/{id}/join", post(handlers::join_challenge))
-        .route("/challenges/{id}/leaderboard", get(handlers::get_leaderboard))
-        .route("/badges/{id}/image", get(handlers::get_badge_image))
+        .route("/challenges/:id", get(handlers::get_challenge))
+        .route("/challenges/:id/join", post(handlers::join_challenge))
+        .route(
+            "/challenges/:id/leaderboard",
+            get(handlers::get_leaderboard),
+        )
+        .route("/badges/:id/image", get(handlers::get_badge_image))
         .route("/health", get(handlers::health_check))
         .layer(middleware::from_fn_with_state(
             pool.clone(),
@@ -82,9 +85,9 @@ fn create_router(pool: sqlx::PgPool, admin_token: String) -> Router {
 
     // Authenticated routes
     let auth_routes = Router::new()
-        .route("/challenges/{id}/progress", post(handlers::report_progress))
-        .route("/challenges/{id}/progress", get(handlers::get_progress))
-        .route("/challenges/{id}/leave", delete(handlers::leave_challenge))
+        .route("/challenges/:id/progress", post(handlers::report_progress))
+        .route("/challenges/:id/progress", get(handlers::get_progress))
+        .route("/challenges/:id/leave", delete(handlers::leave_challenge))
         .layer(middleware::from_fn_with_state(
             pool.clone(),
             auth::require_auth,
@@ -93,18 +96,18 @@ fn create_router(pool: sqlx::PgPool, admin_token: String) -> Router {
     // Admin routes
     let admin_routes = Router::new()
         .route("/admin/challenges", post(handlers::create_challenge))
-        .route("/admin/challenges/{id}", put(handlers::update_challenge))
-        .route("/admin/challenges/{id}", delete(handlers::delete_challenge))
+        .route("/admin/challenges/:id", put(handlers::update_challenge))
+        .route("/admin/challenges/:id", delete(handlers::delete_challenge))
         .route(
-            "/admin/challenges/{id}/badges",
+            "/admin/challenges/:id/badges",
             post(handlers::upload_badge).get(handlers::list_badges),
         )
-        .route("/admin/badges/{id}", delete(handlers::delete_badge))
+        .route("/admin/badges/:id", delete(handlers::delete_badge))
         .route(
-            "/admin/challenges/{id}/invites",
+            "/admin/challenges/:id/invites",
             post(handlers::generate_invite).get(handlers::list_invites),
         )
-        .route("/admin/invites/{token}", delete(handlers::revoke_invite))
+        .route("/admin/invites/:token", delete(handlers::revoke_invite))
         .layer(middleware::from_fn_with_state(
             admin_token,
             auth::require_admin,
