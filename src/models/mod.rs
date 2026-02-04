@@ -1,11 +1,17 @@
 pub mod badge;
 pub mod challenge;
+pub mod friend_invite;
+pub mod friend_request;
 pub mod invite;
 pub mod participant;
 pub mod progress;
+pub mod user;
 
 pub use badge::*;
 pub use challenge::*;
+pub use friend_invite::*;
+pub use friend_request::*;
 pub use invite::*;
 pub use participant::*;
 pub use progress::*;
+pub use user::*;

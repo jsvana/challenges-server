@@ -13,7 +13,7 @@ Application entry point and router setup.
 
 **Route Groups:**
 - Public routes (optional auth): `/v1/challenges`, `/v1/challenges/:id`, `/v1/challenges/:id/join`, `/v1/challenges/:id/leaderboard`, `/v1/badges/:id/image`, `/v1/health`
-- Authenticated routes (require auth): `/v1/challenges/:id/progress`, `/v1/challenges/:id/leave`
+- Authenticated routes (require auth): `/v1/challenges/:id/progress`, `/v1/challenges/:id/leave`, `/v1/friends/invite-link`, `/v1/friends/requests`
 - Admin routes (require admin token): `/v1/admin/challenges`, `/v1/admin/challenges/:id`, `/v1/admin/challenges/:id/badges`, `/v1/admin/badges/:id`, `/v1/admin/challenges/:id/invites`, `/v1/admin/invites/:token`
 - Static files: Fallback to `web/dist/` with SPA routing support
 
@@ -21,7 +21,7 @@ Application entry point and router setup.
 Environment variable configuration.
 
 **Exports:**
-- `struct Config` - Application configuration with database_url, admin_token, port, base_url
+- `struct Config` - Application configuration with database_url, admin_token, port, base_url, invite_base_url, invite_expiry_days
 - `impl Config::from_env()` - Load config from environment variables
 - `enum ConfigError` - Configuration errors (Missing, Invalid)
 
@@ -30,6 +30,8 @@ Environment variable configuration.
 - `ADMIN_TOKEN` - Required, admin API authentication
 - `PORT` - Optional, default 8080
 - `BASE_URL` - Optional, for generating URLs
+- `INVITE_BASE_URL` - Optional, default "https://carrierwave.app", base URL for friend invite links
+- `INVITE_EXPIRY_DAYS` - Optional, default 7, how long friend invite links are valid
 
 ### `src/error.rs`
 Application error types with HTTP responses.
@@ -42,7 +44,13 @@ Application error types with HTTP responses.
 - `ChallengeNotFound` - 404, challenge_id in details
 - `BadgeNotFound` - 404, badge_id in details
 - `InviteNotFound` - 404, token in details
+- `UserNotFound` - 404, user_id in details
+- `FriendInviteNotFound` - 404, token in details (expired or not found)
+- `FriendInviteUsed` - 410 Gone, token in details
 - `AlreadyJoined` - 409 Conflict
+- `AlreadyFriends` - 409 Conflict
+- `FriendRequestExists` - 409 Conflict
+- `CannotFriendSelf` - 422 Unprocessable Entity
 - `NotParticipating` - 403 Forbidden
 - `InviteRequired` - 403 Forbidden
 - `InviteExpired` - 403 Forbidden

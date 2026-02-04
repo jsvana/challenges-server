@@ -8,7 +8,7 @@ mod models;
 use std::net::SocketAddr;
 
 use axum::{
-    middleware,
+    middleware, Extension,
     routing::{delete, get, post, put},
     Router,
 };
@@ -51,7 +51,7 @@ async fn main() {
     tracing::info!("Database connected and migrations complete");
 
     // Build router
-    let app = create_router(pool.clone(), config.admin_token.clone());
+    let app = create_router(pool.clone(), config.clone());
 
     // Start server
     let addr = SocketAddr::from(([0, 0, 0, 0], config.port));
@@ -61,7 +61,7 @@ async fn main() {
     axum::serve(listener, app).await.unwrap();
 }
 
-fn create_router(pool: sqlx::PgPool, admin_token: String) -> Router {
+fn create_router(pool: sqlx::PgPool, config: Config) -> Router {
     let cors = CorsLayer::new()
         .allow_origin(Any)
         .allow_methods(Any)
@@ -96,6 +96,9 @@ fn create_router(pool: sqlx::PgPool, admin_token: String) -> Router {
             "/participants/:callsign/challenges",
             get(handlers::list_challenges_for_callsign),
         )
+        .route("/friends/invite-link", get(handlers::get_invite_link))
+        .route("/friends/requests", post(handlers::create_friend_request))
+        .layer(Extension(config.clone()))
         .layer(middleware::from_fn_with_state(
             pool.clone(),
             auth::require_auth,
@@ -117,7 +120,7 @@ fn create_router(pool: sqlx::PgPool, admin_token: String) -> Router {
         )
         .route("/admin/invites/:token", delete(handlers::revoke_invite))
         .layer(middleware::from_fn_with_state(
-            admin_token,
+            config.admin_token,
             auth::require_admin,
         ));
 

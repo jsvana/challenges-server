@@ -79,3 +79,10 @@ Invite token management.
 - `async fn generate_invite()` - POST /v1/admin/challenges/:id/invites - Generate invite token (admin)
 - `async fn list_invites()` - GET /v1/admin/challenges/:id/invites - List invites (admin)
 - `async fn revoke_invite()` - DELETE /v1/admin/invites/:token - Revoke invite token (admin)
+
+### `src/handlers/friends.rs`
+Friend invite links and friend requests.
+
+**Exports:**
+- `async fn get_invite_link()` - GET /v1/friends/invite-link - Generate friend invite link (auth required)
+- `async fn create_friend_request()` - POST /v1/friends/requests - Create friend request by user ID or invite token (auth required)

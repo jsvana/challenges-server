@@ -18,6 +18,24 @@ pub enum AppError {
     #[error("Invite not found")]
     InviteNotFound { token: String },
 
+    #[error("User not found")]
+    UserNotFound { user_id: Uuid },
+
+    #[error("Friend invite not found or expired")]
+    FriendInviteNotFound { token: String },
+
+    #[error("Friend invite has already been used")]
+    FriendInviteUsed { token: String },
+
+    #[error("Already friends with this user")]
+    AlreadyFriends,
+
+    #[error("Friend request already exists")]
+    FriendRequestExists,
+
+    #[error("Cannot send friend request to yourself")]
+    CannotFriendSelf,
+
     #[error("Already joined this challenge")]
     AlreadyJoined,
 
@@ -88,6 +106,28 @@ impl IntoResponse for AppError {
                 StatusCode::NOT_FOUND,
                 "INVITE_NOT_FOUND",
                 Some(serde_json::json!({ "token": token })),
+            ),
+            Self::UserNotFound { user_id } => (
+                StatusCode::NOT_FOUND,
+                "USER_NOT_FOUND",
+                Some(serde_json::json!({ "userId": user_id })),
+            ),
+            Self::FriendInviteNotFound { token } => (
+                StatusCode::NOT_FOUND,
+                "FRIEND_INVITE_NOT_FOUND",
+                Some(serde_json::json!({ "token": token })),
+            ),
+            Self::FriendInviteUsed { token } => (
+                StatusCode::GONE,
+                "FRIEND_INVITE_USED",
+                Some(serde_json::json!({ "token": token })),
+            ),
+            Self::AlreadyFriends => (StatusCode::CONFLICT, "ALREADY_FRIENDS", None),
+            Self::FriendRequestExists => (StatusCode::CONFLICT, "FRIEND_REQUEST_EXISTS", None),
+            Self::CannotFriendSelf => (
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "CANNOT_FRIEND_SELF",
+                None,
             ),
             Self::AlreadyJoined => (StatusCode::CONFLICT, "ALREADY_JOINED", None),
             Self::NotParticipating => (StatusCode::FORBIDDEN, "NOT_PARTICIPATING", None),

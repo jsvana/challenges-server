@@ -58,3 +58,27 @@ Seed data for initial challenges.
   - Type: collection, Category: award
   - Historical QSOs allowed
   - Tiers: 50, 100 (DXCC), 150, 200, 250, 300, 331 (Honor Roll)
+
+### `migrations/003_friend_system.sql`
+Friend system: users, friend requests, and friend invite links.
+
+**Tables:**
+- `users` - Canonical user identity by callsign
+  - Columns: id (UUID), callsign (TEXT UNIQUE), created_at
+  - Populated from existing participants on migration
+  - Indexes: callsign
+
+- `friend_requests` - Friend requests between users
+  - Columns: id, from_user_id, to_user_id, status, requested_at, responded_at
+  - Constraints: status IN (pending, accepted, declined), UNIQUE(from_user_id, to_user_id)
+  - Indexes: from_user_id, to_user_id, status (pending only)
+
+- `friendships` - Bidirectional friendship records
+  - Columns: id, user_id, friend_id, created_at
+  - Constraints: UNIQUE(user_id, friend_id)
+  - Indexes: user_id, friend_id
+
+- `friend_invites` - Friend invite links
+  - Columns: id, token, user_id, created_at, expires_at, used_at, used_by_user_id
+  - Constraints: token format check (inv_ prefix + 20+ alphanumeric)
+  - Indexes: token (unique), user_id, expires_at

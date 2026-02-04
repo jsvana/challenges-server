@@ -62,3 +62,30 @@ Invite token data structures.
 - `struct InviteResponse` - API response for invite (Serialize)
 - `struct CreateInviteRequest` - API request for creating invite (Deserialize)
 - `impl InviteToken::into_response()` - Convert to API response with URL
+
+### `src/models/user.rs`
+User data structures.
+
+**Exports:**
+- `struct User` - Database row for users table (FromRow)
+- `struct UserResponse` - API response for user (Serialize)
+- `impl From<User> for UserResponse` - Conversion for API response
+
+### `src/models/friend_request.rs`
+Friend request data structures.
+
+**Exports:**
+- `struct FriendRequest` - Database row for friend_requests table (FromRow)
+- `struct FriendRequestWithCallsigns` - Database row with joined callsigns (FromRow)
+- `struct FriendRequestResponse` - API response for friend request (Serialize)
+- `struct CreateFriendRequestBody` - API request body with to_user_id or invite_token (Deserialize)
+- `struct Friendship` - Database row for friendships table (FromRow)
+- `impl From<FriendRequestWithCallsigns> for FriendRequestResponse` - Conversion for API response
+
+### `src/models/friend_invite.rs`
+Friend invite link data structures.
+
+**Exports:**
+- `struct FriendInvite` - Database row for friend_invites table (FromRow)
+- `struct FriendInviteResponse` - API response for friend invite (Serialize)
+- `impl FriendInvite::into_response()` - Convert to API response with URL

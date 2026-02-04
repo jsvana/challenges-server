@@ -1,11 +1,17 @@
 pub mod badges;
 pub mod challenges;
+pub mod friend_invites;
+pub mod friend_requests;
 pub mod invites;
 pub mod participants;
 pub mod progress;
+pub mod users;
 
 pub use badges::*;
 pub use challenges::*;
+pub use friend_invites::*;
+pub use friend_requests::*;
 pub use invites::*;
 pub use participants::*;
 pub use progress::*;
+pub use users::*;

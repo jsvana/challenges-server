@@ -1,5 +1,6 @@
 pub mod badges;
 pub mod challenges;
+pub mod friends;
 pub mod health;
 pub mod invites;
 pub mod join;
@@ -9,6 +10,7 @@ pub mod progress;
 
 pub use badges::*;
 pub use challenges::*;
+pub use friends::*;
 pub use health::*;
 pub use invites::*;
 pub use join::*;

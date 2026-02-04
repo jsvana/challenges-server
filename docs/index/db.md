@@ -62,3 +62,32 @@ Invite token management.
 - `async fn list_invites()` - List invites for challenge, returns `Vec<InviteToken>`
 - `async fn get_invite()` - Get invite by token, returns `Option<InviteToken>`
 - `async fn delete_invite()` - Delete invite by token, returns `bool`
+
+### `src/db/users.rs`
+User management.
+
+**Exports:**
+- `async fn get_user_by_callsign()` - Get user by callsign, returns `Option<User>`
+- `async fn get_user_by_id()` - Get user by ID, returns `Option<User>`
+- `async fn get_or_create_user()` - Get or create user by callsign, returns `User`
+
+### `src/db/friend_requests.rs`
+Friend request management.
+
+**Exports:**
+- `async fn create_friend_request()` - Create friend request, returns `FriendRequestWithCallsigns`
+- `async fn get_friend_request()` - Get request by ID, returns `Option<FriendRequest>`
+- `async fn get_pending_request_between()` - Check for pending request between users, returns `Option<FriendRequest>`
+- `async fn are_friends()` - Check if users are friends, returns `bool`
+- `async fn accept_friend_request()` - Accept request and create friendships, returns `Option<FriendRequestWithCallsigns>`
+- `async fn decline_friend_request()` - Decline request, returns `Option<FriendRequest>`
+
+### `src/db/friend_invites.rs`
+Friend invite link management.
+
+**Exports:**
+- `async fn create_friend_invite()` - Create friend invite, returns `FriendInvite`
+- `async fn get_friend_invite()` - Get invite by token, returns `Option<FriendInvite>`
+- `async fn get_valid_friend_invite()` - Get valid (not expired, not used) invite, returns `Option<FriendInvite>`
+- `async fn mark_invite_used()` - Mark invite as used, returns `Option<FriendInvite>`
+- `async fn cleanup_expired_invites()` - Delete old expired/used invites, returns `u64`
