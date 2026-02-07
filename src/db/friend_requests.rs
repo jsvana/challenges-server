@@ -254,3 +254,43 @@ pub async fn get_pending_requests_for_user(
 
     Ok(requests)
 }
+
+/// Remove a friendship (both directions) by friendship ID.
+/// Returns true if the friendship existed and was removed.
+pub async fn remove_friendship(
+    pool: &PgPool,
+    friendship_id: Uuid,
+    user_id: Uuid,
+) -> Result<bool, AppError> {
+    // First verify this friendship belongs to the requesting user
+    let friendship = sqlx::query_as::<_, Friendship>(
+        r#"
+        SELECT id, user_id, friend_id, created_at
+        FROM friendships
+        WHERE id = $1 AND user_id = $2
+        "#,
+    )
+    .bind(friendship_id)
+    .bind(user_id)
+    .fetch_optional(pool)
+    .await?;
+
+    let Some(friendship) = friendship else {
+        return Ok(false);
+    };
+
+    // Delete both directions
+    sqlx::query(
+        r#"
+        DELETE FROM friendships
+        WHERE (user_id = $1 AND friend_id = $2)
+           OR (user_id = $2 AND friend_id = $1)
+        "#,
+    )
+    .bind(friendship.user_id)
+    .bind(friendship.friend_id)
+    .execute(pool)
+    .await?;
+
+    Ok(true)
+}

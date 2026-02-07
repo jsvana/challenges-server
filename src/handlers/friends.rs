@@ -3,7 +3,7 @@ use axum::{
     http::StatusCode,
 };
 
-use crate::extractors::Json;
+use crate::extractors::{Json, Path};
 use sqlx::PgPool;
 
 use crate::auth::AuthContext;
@@ -184,4 +184,77 @@ pub async fn list_pending_requests(
     Ok(Json(DataResponse {
         data: crate::models::PendingRequestsResponse { incoming, outgoing },
     }))
+}
+
+/// POST /v1/friends/requests/:id/accept
+/// Accept a pending friend request
+pub async fn accept_friend_request(
+    State(pool): State<PgPool>,
+    Path(request_id): Path<uuid::Uuid>,
+    Extension(auth): Extension<AuthContext>,
+) -> Result<(StatusCode, Json<DataResponse<crate::models::FriendRequestResponse>>), AppError> {
+    let user = db::get_or_create_user(&pool, &auth.callsign).await?;
+
+    // Verify the request exists and is addressed to this user
+    let request = db::get_friend_request(&pool, request_id)
+        .await?
+        .ok_or(AppError::FriendRequestNotFound { request_id })?;
+
+    if request.to_user_id != user.id {
+        return Err(AppError::Forbidden);
+    }
+
+    let accepted = db::accept_friend_request(&pool, request_id)
+        .await?
+        .ok_or(AppError::FriendRequestNotFound { request_id })?;
+
+    Ok((
+        StatusCode::OK,
+        Json(DataResponse {
+            data: accepted.into(),
+        }),
+    ))
+}
+
+/// POST /v1/friends/requests/:id/decline
+/// Decline a pending friend request
+pub async fn decline_friend_request(
+    State(pool): State<PgPool>,
+    Path(request_id): Path<uuid::Uuid>,
+    Extension(auth): Extension<AuthContext>,
+) -> Result<StatusCode, AppError> {
+    let user = db::get_or_create_user(&pool, &auth.callsign).await?;
+
+    // Verify the request exists and is addressed to this user
+    let request = db::get_friend_request(&pool, request_id)
+        .await?
+        .ok_or(AppError::FriendRequestNotFound { request_id })?;
+
+    if request.to_user_id != user.id {
+        return Err(AppError::Forbidden);
+    }
+
+    db::decline_friend_request(&pool, request_id)
+        .await?
+        .ok_or(AppError::FriendRequestNotFound { request_id })?;
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
+/// DELETE /v1/friends/:id
+/// Remove an existing friend
+pub async fn remove_friend(
+    State(pool): State<PgPool>,
+    Path(friendship_id): Path<uuid::Uuid>,
+    Extension(auth): Extension<AuthContext>,
+) -> Result<StatusCode, AppError> {
+    let user = db::get_or_create_user(&pool, &auth.callsign).await?;
+
+    let removed = db::remove_friendship(&pool, friendship_id, user.id).await?;
+
+    if !removed {
+        return Err(AppError::FriendshipNotFound { friendship_id });
+    }
+
+    Ok(StatusCode::NO_CONTENT)
 }

@@ -27,6 +27,12 @@ pub enum AppError {
     #[error("Friend invite has already been used")]
     FriendInviteUsed { token: String },
 
+    #[error("Friend request not found")]
+    FriendRequestNotFound { request_id: Uuid },
+
+    #[error("Friendship not found")]
+    FriendshipNotFound { friendship_id: Uuid },
+
     #[error("Already friends with this user")]
     AlreadyFriends,
 
@@ -121,6 +127,16 @@ impl IntoResponse for AppError {
                 StatusCode::GONE,
                 "FRIEND_INVITE_USED",
                 Some(serde_json::json!({ "token": token })),
+            ),
+            Self::FriendRequestNotFound { request_id } => (
+                StatusCode::NOT_FOUND,
+                "FRIEND_REQUEST_NOT_FOUND",
+                Some(serde_json::json!({ "requestId": request_id })),
+            ),
+            Self::FriendshipNotFound { friendship_id } => (
+                StatusCode::NOT_FOUND,
+                "FRIENDSHIP_NOT_FOUND",
+                Some(serde_json::json!({ "friendshipId": friendship_id })),
             ),
             Self::AlreadyFriends => (StatusCode::CONFLICT, "ALREADY_FRIENDS", None),
             Self::FriendRequestExists => (StatusCode::CONFLICT, "FRIEND_REQUEST_EXISTS", None),

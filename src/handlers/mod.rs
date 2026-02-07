@@ -12,6 +12,8 @@ pub mod users;
 
 pub use badges::*;
 pub use challenges::*;
+pub mod activity_feed;
+pub use activity_feed::*;
 pub use friends::*;
 pub use health::*;
 pub use invite_page::*;
