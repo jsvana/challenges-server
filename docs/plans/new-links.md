@@ -171,7 +171,7 @@ pub struct Config {
  
 Environment variables:
 ```
-INVITE_BASE_URL=https://carrierwave.app
+INVITE_BASE_URL=https://activities.carrierwave.app
 INVITE_EXPIRY_DAYS=7
 ```
  

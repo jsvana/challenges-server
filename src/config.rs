@@ -27,7 +27,7 @@ impl Config {
         let base_url = env::var("BASE_URL").ok();
 
         let invite_base_url = env::var("INVITE_BASE_URL")
-            .unwrap_or_else(|_| "https://carrierwave.app".to_string());
+            .unwrap_or_else(|_| "https://activities.carrierwave.app".to_string());
 
         let invite_expiry_days = env::var("INVITE_EXPIRY_DAYS")
             .unwrap_or_else(|_| "7".to_string())

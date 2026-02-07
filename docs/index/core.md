@@ -30,7 +30,7 @@ Environment variable configuration.
 - `ADMIN_TOKEN` - Required, admin API authentication
 - `PORT` - Optional, default 8080
 - `BASE_URL` - Optional, for generating URLs
-- `INVITE_BASE_URL` - Optional, default "https://carrierwave.app", base URL for friend invite links
+- `INVITE_BASE_URL` - Optional, default "https://activities.carrierwave.app", base URL for friend invite links
 - `INVITE_EXPIRY_DAYS` - Optional, default 7, how long friend invite links are valid
 
 ### `src/error.rs`
