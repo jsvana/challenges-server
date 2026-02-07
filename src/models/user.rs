@@ -44,3 +44,17 @@ impl From<User> for UserSearchResponse {
         }
     }
 }
+
+#[derive(Debug, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RegisterRequest {
+    pub callsign: String,
+    pub device_name: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RegisterResponse {
+    pub user_id: Uuid,
+    pub device_token: String,
+}

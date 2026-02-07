@@ -30,3 +30,37 @@ pub async fn search_users(
 
     Ok(Json(DataResponse { data: results }))
 }
+
+use axum::http::StatusCode;
+use crate::models::{RegisterRequest, RegisterResponse};
+
+/// POST /v1/register
+/// Register a user so they appear in friend search and get an auth token.
+/// Creates rows in both users and participants tables.
+pub async fn register(
+    State(pool): State<PgPool>,
+    Json(body): Json<RegisterRequest>,
+) -> Result<(StatusCode, Json<DataResponse<RegisterResponse>>), AppError> {
+    if body.callsign.trim().is_empty() {
+        return Err(AppError::Validation {
+            message: "callsign is required".to_string(),
+        });
+    }
+
+    // Create user record (for friend search)
+    let user = db::get_or_create_user(&pool, &body.callsign).await?;
+
+    // Create participant record (for auth token)
+    let (participant, _is_new) =
+        db::get_or_create_participant(&pool, &body.callsign, body.device_name.as_deref()).await?;
+
+    Ok((
+        StatusCode::CREATED,
+        Json(DataResponse {
+            data: RegisterResponse {
+                user_id: user.id,
+                device_token: participant.device_token,
+            },
+        }),
+    ))
+}
