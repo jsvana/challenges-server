@@ -153,3 +153,44 @@ pub async fn decline_friend_request(
 
     Ok(request)
 }
+
+/// Find registered users from a list of callsigns, excluding:
+/// - The requesting user
+/// - Users already friends with the requester
+/// - Users with pending friend requests (either direction)
+pub async fn find_suggested_friends(
+    pool: &PgPool,
+    user_id: Uuid,
+    callsigns: &[String],
+) -> Result<Vec<crate::models::User>, AppError> {
+    if callsigns.is_empty() {
+        return Ok(vec![]);
+    }
+
+    let users = sqlx::query_as::<_, crate::models::User>(
+        r#"
+        SELECT u.id, u.callsign, u.created_at
+        FROM users u
+        WHERE UPPER(u.callsign) = ANY(
+            SELECT UPPER(unnest($2::text[]))
+        )
+        AND u.id != $1
+        AND u.id NOT IN (
+            SELECT friend_id FROM friendships WHERE user_id = $1
+        )
+        AND u.id NOT IN (
+            SELECT to_user_id FROM friend_requests
+            WHERE from_user_id = $1 AND status = 'pending'
+            UNION
+            SELECT from_user_id FROM friend_requests
+            WHERE to_user_id = $1 AND status = 'pending'
+        )
+        "#,
+    )
+    .bind(user_id)
+    .bind(callsigns)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(users)
+}

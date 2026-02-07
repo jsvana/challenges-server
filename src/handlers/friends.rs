@@ -104,3 +104,35 @@ pub async fn create_friend_request(
         }),
     ))
 }
+
+/// POST /v1/friends/suggestions
+/// Given a list of callsigns, return which ones are registered users
+/// (excluding already-friends and pending requests)
+pub async fn get_friend_suggestions(
+    State(pool): State<PgPool>,
+    Extension(auth): Extension<AuthContext>,
+    Json(body): Json<crate::models::FriendSuggestionsBody>,
+) -> Result<Json<DataResponse<Vec<crate::models::FriendSuggestionResponse>>>, AppError> {
+    if body.callsigns.is_empty() {
+        return Ok(Json(DataResponse { data: vec![] }));
+    }
+
+    // Cap at 100 callsigns to prevent abuse
+    let callsigns: Vec<String> = body.callsigns.into_iter().take(100).collect();
+
+    // Get or create user record for the authenticated user
+    let user = db::get_or_create_user(&pool, &auth.callsign).await?;
+
+    // Find registered users from the provided callsigns
+    let suggested_users = db::find_suggested_friends(&pool, user.id, &callsigns).await?;
+
+    let suggestions = suggested_users
+        .into_iter()
+        .map(|u| crate::models::FriendSuggestionResponse {
+            user_id: u.id,
+            callsign: u.callsign,
+        })
+        .collect();
+
+    Ok(Json(DataResponse { data: suggestions }))
+}

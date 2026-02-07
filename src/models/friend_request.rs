@@ -67,3 +67,15 @@ pub struct Friendship {
     pub friend_id: Uuid,
     pub created_at: DateTime<Utc>,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct FriendSuggestionsBody {
+    pub callsigns: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FriendSuggestionResponse {
+    pub user_id: Uuid,
+    pub callsign: String,
+}
