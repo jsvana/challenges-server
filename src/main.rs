@@ -82,6 +82,7 @@ fn create_router(pool: sqlx::PgPool, config: Config) -> Router {
         )
         .route("/badges/:id/image", get(handlers::get_badge_image))
         .route("/health", get(handlers::health_check))
+        .route("/users/search", get(handlers::search_users))
         .layer(middleware::from_fn_with_state(
             pool.clone(),
             auth::optional_auth,

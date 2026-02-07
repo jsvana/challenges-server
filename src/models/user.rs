@@ -25,3 +25,22 @@ impl From<User> for UserResponse {
         }
     }
 }
+
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UserSearchResponse {
+    pub user_id: Uuid,
+    pub callsign: String,
+    pub display_name: Option<String>,
+}
+
+impl From<User> for UserSearchResponse {
+    fn from(user: User) -> Self {
+        Self {
+            user_id: user.id,
+            callsign: user.callsign,
+            display_name: None,
+        }
+    }
+}

@@ -34,6 +34,25 @@ pub async fn get_user_by_id(pool: &PgPool, user_id: Uuid) -> Result<Option<User>
     Ok(user)
 }
 
+pub async fn search_users(pool: &PgPool, query: &str, limit: i64) -> Result<Vec<User>, AppError> {
+    let pattern = format!("%{}%", query.to_uppercase());
+    let users = sqlx::query_as::<_, User>(
+        r#"
+        SELECT id, callsign, created_at
+        FROM users
+        WHERE UPPER(callsign) LIKE $1
+        ORDER BY callsign
+        LIMIT $2
+        "#,
+    )
+    .bind(&pattern)
+    .bind(limit)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(users)
+}
+
 pub async fn get_or_create_user(pool: &PgPool, callsign: &str) -> Result<User, AppError> {
     let user = sqlx::query_as::<_, User>(
         r#"

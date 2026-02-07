@@ -7,6 +7,7 @@ pub mod join;
 pub mod leaderboard;
 pub mod participants;
 pub mod progress;
+pub mod users;
 
 pub use badges::*;
 pub use challenges::*;
@@ -17,3 +18,4 @@ pub use join::*;
 pub use leaderboard::*;
 pub use participants::*;
 pub use progress::*;
+pub use users::*;
