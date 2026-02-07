@@ -136,3 +136,52 @@ pub async fn get_friend_suggestions(
 
     Ok(Json(DataResponse { data: suggestions }))
 }
+
+
+/// GET /v1/friends
+/// List all accepted friends for the authenticated user
+pub async fn list_friends(
+    State(pool): State<PgPool>,
+    Extension(auth): Extension<AuthContext>,
+) -> Result<Json<DataResponse<Vec<crate::models::FriendResponse>>>, AppError> {
+    let user = db::get_or_create_user(&pool, &auth.callsign).await?;
+    let friends = db::get_friends_for_user(&pool, user.id).await?;
+
+    let data = friends
+        .into_iter()
+        .map(|f| crate::models::FriendResponse {
+            friendship_id: f.friendship_id,
+            callsign: f.callsign,
+            user_id: f.user_id,
+            accepted_at: f.created_at,
+        })
+        .collect();
+
+    Ok(Json(DataResponse { data }))
+}
+
+/// GET /v1/friends/requests/pending
+/// List all pending friend requests (incoming and outgoing) for the authenticated user
+pub async fn list_pending_requests(
+    State(pool): State<PgPool>,
+    Extension(auth): Extension<AuthContext>,
+) -> Result<Json<DataResponse<crate::models::PendingRequestsResponse>>, AppError> {
+    let user = db::get_or_create_user(&pool, &auth.callsign).await?;
+    let requests = db::get_pending_requests_for_user(&pool, user.id).await?;
+
+    let mut incoming = Vec::new();
+    let mut outgoing = Vec::new();
+
+    for req in requests {
+        let response: crate::models::FriendRequestResponse = req.clone().into();
+        if req.to_user_id == user.id {
+            incoming.push(response);
+        } else {
+            outgoing.push(response);
+        }
+    }
+
+    Ok(Json(DataResponse {
+        data: crate::models::PendingRequestsResponse { incoming, outgoing },
+    }))
+}

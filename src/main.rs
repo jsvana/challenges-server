@@ -105,6 +105,8 @@ fn create_router(pool: sqlx::PgPool, config: Config) -> Router {
         .route("/friends/invite-link", get(handlers::get_invite_link))
         .route("/friends/requests", post(handlers::create_friend_request))
         .route("/friends/suggestions", post(handlers::get_friend_suggestions))
+        .route("/friends", get(handlers::list_friends))
+        .route("/friends/requests/pending", get(handlers::list_pending_requests))
         .layer(Extension(config.clone()))
         .layer(middleware::from_fn_with_state(
             pool.clone(),

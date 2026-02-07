@@ -3,7 +3,16 @@
     "allow": [
       "mcp__acp__Edit",
       "mcp__acp__Bash",
-      "mcp__acp__Write"
+      "mcp__acp__Write",
+      "Bash(ansible-vault view:*)",
+      "Bash(gh run watch:*)",
+      "Bash(gh release download:*)",
+      "Bash(shasum:*)",
+      "Bash(curl:*)",
+      "Bash(python3:*)",
+      "Bash(TOKEN=\"fd_CkYZS0Nzn0lqUswShFqF7pTHIorfO0ju\")",
+      "Bash(gh run list:*)",
+      "Bash(gh release view:*)"
     ]
   }
 }

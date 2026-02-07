@@ -79,3 +79,20 @@ pub struct FriendSuggestionResponse {
     pub user_id: Uuid,
     pub callsign: String,
 }
+
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FriendResponse {
+    pub friendship_id: Uuid,
+    pub callsign: String,
+    pub user_id: Uuid,
+    pub accepted_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PendingRequestsResponse {
+    pub incoming: Vec<FriendRequestResponse>,
+    pub outgoing: Vec<FriendRequestResponse>,
+}

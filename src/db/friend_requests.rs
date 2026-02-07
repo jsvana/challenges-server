@@ -194,3 +194,63 @@ pub async fn find_suggested_friends(
 
     Ok(users)
 }
+
+
+/// A friend entry with callsign, for the friends list response.
+#[derive(Debug, Clone, sqlx::FromRow)]
+pub struct FriendWithCallsign {
+    pub friendship_id: Uuid,
+    pub user_id: Uuid,
+    pub callsign: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
+/// Get all accepted friends for a user.
+pub async fn get_friends_for_user(
+    pool: &PgPool,
+    user_id: Uuid,
+) -> Result<Vec<FriendWithCallsign>, AppError> {
+    let friends = sqlx::query_as::<_, FriendWithCallsign>(
+        r#"
+        SELECT f.id as friendship_id, u.id as user_id, u.callsign, f.created_at
+        FROM friendships f
+        JOIN users u ON u.id = f.friend_id
+        WHERE f.user_id = $1
+        ORDER BY u.callsign
+        "#,
+    )
+    .bind(user_id)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(friends)
+}
+
+/// Get all pending friend requests for a user (both incoming and outgoing).
+pub async fn get_pending_requests_for_user(
+    pool: &PgPool,
+    user_id: Uuid,
+) -> Result<Vec<FriendRequestWithCallsigns>, AppError> {
+    let requests = sqlx::query_as::<_, FriendRequestWithCallsigns>(
+        r#"
+        SELECT
+            fr.id,
+            fr.from_user_id,
+            (SELECT callsign FROM users WHERE id = fr.from_user_id) as from_callsign,
+            fr.to_user_id,
+            (SELECT callsign FROM users WHERE id = fr.to_user_id) as to_callsign,
+            fr.status,
+            fr.requested_at,
+            fr.responded_at
+        FROM friend_requests fr
+        WHERE fr.status = 'pending'
+          AND (fr.from_user_id = $1 OR fr.to_user_id = $1)
+        ORDER BY fr.requested_at DESC
+        "#,
+    )
+    .bind(user_id)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(requests)
+}
