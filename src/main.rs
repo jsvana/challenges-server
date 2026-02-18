@@ -114,6 +114,7 @@ fn create_router(pool: sqlx::PgPool, config: Config) -> Router {
         .route("/feed", get(handlers::get_feed))
         .route("/clubs", get(handlers::get_clubs))
         .route("/clubs/:id", get(handlers::get_club_details))
+        .route("/account", delete(handlers::delete_account))
         .layer(Extension(config.clone()))
         .layer(middleware::from_fn_with_state(
             pool.clone(),

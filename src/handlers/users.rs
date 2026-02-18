@@ -32,6 +32,8 @@ pub async fn search_users(
 }
 
 use axum::http::StatusCode;
+use axum::Extension;
+use crate::auth::AuthContext;
 use crate::models::{RegisterRequest, RegisterResponse};
 
 /// POST /v1/register
@@ -63,4 +65,21 @@ pub async fn register(
             },
         }),
     ))
+}
+
+/// DELETE /v1/account
+/// Delete the authenticated user's account and all associated data.
+pub async fn delete_account(
+    State(pool): State<PgPool>,
+    Extension(auth): Extension<AuthContext>,
+) -> Result<StatusCode, AppError> {
+    let rows = db::delete_user_account(&pool, &auth.callsign).await?;
+
+    if rows == 0 {
+        return Err(AppError::UserNotFound {
+            user_id: auth.participant_id,
+        });
+    }
+
+    Ok(StatusCode::NO_CONTENT)
 }
